@@ -3,11 +3,13 @@ import type { CountryCurrencyProfile } from "@/types/fx";
 
 export const COUNTRY_PROFILES = countryProfilesJson as CountryCurrencyProfile[];
 
-export const USD_PROFILE = COUNTRY_PROFILES.find((profile) => profile.currency === "usd");
-
-if (!USD_PROFILE) {
-  throw new Error("USD profile is required in countries dataset.");
-}
+export const USD_PROFILE: CountryCurrencyProfile = (() => {
+  const profile = COUNTRY_PROFILES.find((item) => item.currency === "usd");
+  if (!profile) {
+    throw new Error("USD profile is required in countries dataset.");
+  }
+  return profile;
+})();
 
 export const TRACKED_CURRENCIES = COUNTRY_PROFILES.filter(
   (profile) => profile.currency !== "usd"
