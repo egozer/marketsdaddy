@@ -53,7 +53,6 @@ export const MoneyWarpGlobe = ({
 
     const globe = new GlobeScene(canvas);
     globeRef.current = globe;
-    globe.setReducedMotion(reducedMotion);
 
     let raf = 0;
     const loop = (time: number): void => {

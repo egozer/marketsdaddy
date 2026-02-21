@@ -11,7 +11,7 @@ export const MethodologyPage = (): JSX.Element => (
         <h2>Strength Score</h2>
         <p className="mono">percent_change = (current_rate - previous_rate) / previous_rate * 100</p>
         <p className="mono">z = (percent_change - mean_returns) / stddev_returns</p>
-        <p className="mono">strength_score = normalize(clamp(z, -3, 3), [-3, 3] -> [-100, 100])</p>
+        <p className="mono">strength_score = normalize(clamp(z, -3, 3), [-3, 3] -&gt; [-100, 100])</p>
       </article>
 
       <article className="method-card">
@@ -25,7 +25,7 @@ export const MethodologyPage = (): JSX.Element => (
         <h2>Purchasing Power</h2>
         <p className="mono">converted_value = 1 USD * fx_rate</p>
         <p className="mono">real_value_index = converted_value / PPP_proxy_index</p>
-        <p className="mono">normalized_score = min-max(real_value_index) -> [0, 100]</p>
+        <p className="mono">normalized_score = min-max(real_value_index) -&gt; [0, 100]</p>
       </article>
 
       <article className="method-card">

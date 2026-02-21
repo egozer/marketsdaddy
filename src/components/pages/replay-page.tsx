@@ -29,7 +29,7 @@ export const ReplayPage = (): JSX.Element => {
   const [speed, setSpeed] = useState(5);
   const [loading, setLoading] = useState(false);
 
-  const replayDates = useMemo(() => getReplayDates(), [getReplayDates, replayProgress.total]);
+  const replayDates = useMemo(() => getReplayDates(), [getReplayDates]);
 
   const sliderValue = Math.max(0, replayProgress.currentIndex - 1);
 
