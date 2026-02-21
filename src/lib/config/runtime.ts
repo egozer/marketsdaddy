@@ -4,6 +4,12 @@ export const FX_LATEST_ENDPOINT =
 export const FX_HISTORICAL_ENDPOINT =
   "https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/{date}/currencies/usd.json";
 
+export const FX_LATEST_FALLBACK_ENDPOINT =
+  "https://latest.currency-api.pages.dev/v1/currencies/usd.json";
+
+export const FX_HISTORICAL_FALLBACK_ENDPOINT =
+  "https://{date}.currency-api.pages.dev/v1/currencies/usd.json";
+
 export const POLL_INTERVAL_MS = Number(process.env.NEXT_PUBLIC_POLL_INTERVAL_MS ?? 5000);
 export const POLL_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_POLL_TIMEOUT_MS ?? 4000);
 export const ROLLING_WINDOW_SIZE = Number(process.env.NEXT_PUBLIC_ROLLING_WINDOW_SIZE ?? 120);

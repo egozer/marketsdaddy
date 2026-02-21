@@ -1,4 +1,10 @@
-import { FX_HISTORICAL_ENDPOINT, FX_LATEST_ENDPOINT, POLL_TIMEOUT_MS } from "@/lib/config/runtime";
+import {
+  FX_HISTORICAL_ENDPOINT,
+  FX_HISTORICAL_FALLBACK_ENDPOINT,
+  FX_LATEST_ENDPOINT,
+  FX_LATEST_FALLBACK_ENDPOINT,
+  POLL_TIMEOUT_MS
+} from "@/lib/config/runtime";
 import type { FxApiResponse } from "@/types/fx";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -52,28 +58,40 @@ const fetchWithTimeout = async (url: string, timeoutMs: number, signal?: AbortSi
   }
 };
 
-export const fetchLatestUsdRates = async (signal?: AbortSignal): Promise<FxApiResponse> => {
-  const response = await fetchWithTimeout(FX_LATEST_ENDPOINT, POLL_TIMEOUT_MS, signal);
+const fetchFromCandidates = async (
+  urls: string[],
+  signal?: AbortSignal
+): Promise<FxApiResponse> => {
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    throw new Error(`Failed latest FX fetch: ${response.status}`);
+  for (const url of urls) {
+    try {
+      const response = await fetchWithTimeout(url, POLL_TIMEOUT_MS, signal);
+      if (!response.ok) {
+        lastError = new Error(`Failed FX fetch (${response.status}) for ${url}`);
+        continue;
+      }
+
+      const payload = (await response.json()) as unknown;
+      return validateFxResponse(payload);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Unknown FX fetch error.");
+    }
   }
 
-  const payload = (await response.json()) as unknown;
-  return validateFxResponse(payload);
+  throw lastError ?? new Error("No FX endpoint candidates succeeded.");
+};
+
+export const fetchLatestUsdRates = async (signal?: AbortSignal): Promise<FxApiResponse> => {
+  return fetchFromCandidates([FX_LATEST_ENDPOINT, FX_LATEST_FALLBACK_ENDPOINT], signal);
 };
 
 export const fetchHistoricalUsdRates = async (
   date: string,
   signal?: AbortSignal
 ): Promise<FxApiResponse> => {
-  const url = FX_HISTORICAL_ENDPOINT.replace("{date}", date);
-  const response = await fetchWithTimeout(url, POLL_TIMEOUT_MS, signal);
+  const primary = FX_HISTORICAL_ENDPOINT.replace("{date}", date);
+  const fallback = FX_HISTORICAL_FALLBACK_ENDPOINT.replace("{date}", date);
 
-  if (!response.ok) {
-    throw new Error(`Failed historical FX fetch for ${date}: ${response.status}`);
-  }
-
-  const payload = (await response.json()) as unknown;
-  return validateFxResponse(payload);
+  return fetchFromCandidates([primary, fallback], signal);
 };
