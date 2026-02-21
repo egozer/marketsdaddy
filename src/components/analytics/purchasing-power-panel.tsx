@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import type { ProcessedCurrencyMetric, PurchasingPowerObject } from "@/types/fx";
 
@@ -9,8 +9,6 @@ interface PurchasingPowerPanelProps {
   rows: PurchasingPowerObject[];
   metrics: ProcessedCurrencyMetric[];
 }
-
-type SortKey = "strength" | "realValue" | "normalized";
 
 const formatConverted = (value: number, currency: string): string =>
   `${new Intl.NumberFormat("en-US", {
@@ -30,28 +28,19 @@ const insightFor = (relativeVsMedianPercent: number): string => {
 };
 
 export const PurchasingPowerPanel = ({ rows, metrics }: PurchasingPowerPanelProps): JSX.Element => {
-  const [sortKey, setSortKey] = useState<SortKey>("strength");
   const metricMap = useMemo(() => new Map(metrics.map((metric) => [metric.currency, metric])), [metrics]);
 
   const sorted = useMemo(() => {
     const cloned = [...rows];
 
     cloned.sort((a, b) => {
-      if (sortKey === "realValue") {
-        return b.realValueIndex - a.realValueIndex;
-      }
-
-      if (sortKey === "normalized") {
-        return b.normalizedScore - a.normalizedScore;
-      }
-
       const strengthA = metricMap.get(a.currency)?.strengthScore ?? 0;
       const strengthB = metricMap.get(b.currency)?.strengthScore ?? 0;
       return strengthB - strengthA;
     });
 
     return cloned.map((row, index) => ({ ...row, rank: index + 1 }));
-  }, [metricMap, rows, sortKey]);
+  }, [metricMap, rows]);
 
   return (
     <section className="ppp-panel" id="ppp-experiment" aria-label="Purchasing power rankings">
@@ -72,22 +61,6 @@ export const PurchasingPowerPanel = ({ rows, metrics }: PurchasingPowerPanelProp
             <small>{insightFor(row.relativeVsMedianPercent)}</small>
           </article>
         ))}
-      </div>
-
-      <div className="table-controls" role="group" aria-label="Ranking sort controls">
-        <button type="button" className={sortKey === "strength" ? "active" : ""} onClick={() => setSortKey("strength")}>
-          Sort by Strength
-        </button>
-        <button type="button" className={sortKey === "realValue" ? "active" : ""} onClick={() => setSortKey("realValue")}>
-          Sort by Real Value
-        </button>
-        <button
-          type="button"
-          className={sortKey === "normalized" ? "active" : ""}
-          onClick={() => setSortKey("normalized")}
-        >
-          Sort by Norm Score
-        </button>
       </div>
 
       <div className="ppp-table-wrap">

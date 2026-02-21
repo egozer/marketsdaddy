@@ -64,6 +64,10 @@ export const LandingPage = (): JSX.Element => {
   const tickerMetrics = metrics.slice(0, 14);
 
   const selectedMetric = selectedCurrency ? metricMap.get(selectedCurrency) ?? null : null;
+  const selectedPurchasing =
+    selectedCurrency
+      ? purchasingPower.find((entry) => entry.currency === selectedCurrency) ?? null
+      : null;
   const selectedProfile = selectedCurrency
     ? TRACKED_PROFILES.find((profile) => profile.currency === selectedCurrency) ?? null
     : null;
@@ -178,13 +182,12 @@ export const LandingPage = (): JSX.Element => {
                     {formatPercent(move24hProxy)}
                   </dd>
                 </div>
-                <div>
-                  <dt>Volatility</dt>
-                  <dd className="mono">{selectedMetric.volatility.toFixed(5)}</dd>
-                </div>
               </dl>
 
-              <StrengthGauge value={selectedMetric.strengthScore} label="Strength score" />
+              <StrengthGauge
+                value={selectedPurchasing ? selectedPurchasing.normalizedScore * 2 - 100 : 0}
+                label="Real Value score"
+              />
 
               <div className="mini-chart mono">
                 <Sparkline values={sparklineValues} width={280} height={74} />

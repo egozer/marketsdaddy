@@ -103,6 +103,17 @@ a {
   color: var(--fx-muted);
   font-size: 12px;
   letter-spacing: 0.04em;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.fluxa-footer a {
+  color: var(--fx-text);
+  text-decoration: none;
+}
+
+.fluxa-footer a:hover {
+  color: var(--fx-cyan);
 }
 
 .fluxa-page {
