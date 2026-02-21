@@ -1,7 +1,5 @@
-import { GlobalIndexPage } from "@/components/pages/global-index-page";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function IndexRoutePage(): JSX.Element {
-  return <GlobalIndexPage />;
+export default function IndexRoutePage(): never {
+  redirect("/global-index");
 }
