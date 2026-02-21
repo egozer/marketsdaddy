@@ -1,0 +1,7 @@
+<svg width="312" height="88" viewBox="0 0 312 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="312" height="88" rx="12" fill="none"/>
+  <path d="M26 57V31H63" stroke="#00E5FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27 50C45 56 66 52 86 41C109 28 130 25 153 30" stroke="#00E5FF" stroke-opacity="0.85" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="97" y="57" fill="#F4F7FF" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="700" letter-spacing="2">LUXA</text>
+  <text x="252" y="56" fill="#9CA3AF" font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="4">LIVE</text>
+</svg>
