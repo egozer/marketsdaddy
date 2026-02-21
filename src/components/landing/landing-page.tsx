@@ -84,15 +84,15 @@ export function LandingPage() {
             </p>
           </article>
           <article>
-            <h3>Daddy&apos;s Suggestions</h3>
+            <h3>Public Stock Forum</h3>
             <p>
-              Action-first guidance: what to watch, what to avoid, and what to do next.
+              Every stock has its own public thread. Share takes, challenge ideas, and discuss setups.
             </p>
           </article>
           <article>
-            <h3>Realtime Price Alerts</h3>
+            <h3>Daddy AI Commands</h3>
             <p>
-              Set target levels and receive in-app + browser notifications when markets move.
+              Use <code>/daddy your question</code> in comments and get an instant AI analysis reply in public.
             </p>
           </article>
         </div>

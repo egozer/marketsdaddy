@@ -8,10 +8,11 @@ AI-powered market analysis platform built with Next.js + TypeScript + Firebase A
 - Firebase authentication
 - Continue with Google
 - Email/password register + login (no email verification gate)
-- Live market quotes via [fawazahmed0/exchange-api](https://github.com/fawazahmed0/exchange-api)
-- Realtime watchlist and target alerts stored in Firebase Realtime Database
-- In-app and browser notifications on target hits
-- OpenRouter-powered AI due diligence panel ("Daddy's AI Analysis")
+- Live stock list with quote polling
+- Server-side quote endpoint (`/api/stock/quote`) for ticker data
+- Public per-stock community forum (Realtime Database)
+- `/daddy ...` command in comments: Daddy AI posts public analysis reply
+- OpenRouter-powered AI analyst persona ("Daddy")
 
 ## Tech Stack
 
@@ -82,6 +83,16 @@ Example starter Realtime Database rules:
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "forums": {
+      "$stockId": {
+        "comments": {
+          ".read": "auth != null",
+          "$commentId": {
+            ".write": "auth != null"
+          }
+        }
       }
     }
   }

@@ -5,7 +5,13 @@ import {
   update
 } from "firebase/database";
 import { getFirebaseDatabase } from "@/lib/firebase";
-import type { AppNotification, AppUserProfile, PriceAlert, WatchItem } from "@/lib/types";
+import type {
+  AppNotification,
+  AppUserProfile,
+  ForumComment,
+  PriceAlert,
+  WatchItem
+} from "@/lib/types";
 
 function requireDb() {
   const db = getFirebaseDatabase();
@@ -29,6 +35,10 @@ export function alertsRef(uid: string) {
 
 export function notificationsRef(uid: string) {
   return ref(requireDb(), `notifications/${uid}`);
+}
+
+export function forumCommentsRef(stockId: string) {
+  return ref(requireDb(), `forums/${stockId}/comments`);
 }
 
 export async function upsertUserProfile(profile: AppUserProfile) {
@@ -65,4 +75,22 @@ export async function createNotification(
 
 export async function markNotificationRead(uid: string, notificationId: string) {
   await update(ref(requireDb(), `notifications/${uid}/${notificationId}`), { read: true });
+}
+
+export async function createForumComment(
+  stockId: string,
+  payload: Omit<ForumComment, "id" | "stockId">
+): Promise<ForumComment> {
+  const listRef = forumCommentsRef(stockId);
+  const itemRef = push(listRef);
+  const fallbackId = `comment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  const comment: ForumComment = {
+    id: itemRef.key ?? fallbackId,
+    stockId,
+    ...payload
+  };
+
+  await set(itemRef, comment);
+  return comment;
 }

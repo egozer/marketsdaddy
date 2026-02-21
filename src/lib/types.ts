@@ -13,6 +13,22 @@ export type MarketQuote = {
   fetchedAt: string;
 };
 
+export type StockItem = {
+  id: string;
+  symbol: string;
+  company: string;
+  exchange: string;
+  sector: string;
+};
+
+export type StockQuote = {
+  symbol: string;
+  price: number | null;
+  change24h: number | null;
+  currency: string;
+  fetchedAt: string;
+};
+
 export type AppUserProfile = {
   uid: string;
   email: string | null;
@@ -57,4 +73,14 @@ export type AiAnalysis = {
   opportunities: string[];
   actionPlan: string[];
   generatedAt: string;
+};
+
+export type ForumComment = {
+  id: string;
+  stockId: string;
+  authorName: string;
+  authorUid: string | null;
+  message: string;
+  createdAt: string;
+  isDaddy: boolean;
 };
