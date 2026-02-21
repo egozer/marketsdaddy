@@ -75,15 +75,16 @@ export function DashboardApp() {
     if (!user) {
       return;
     }
+    const uid = user.uid;
 
     let mounted = true;
 
     async function bootstrapDefaultWatchlist() {
-      const snapshot = await get(watchlistRef(user.uid));
+      const snapshot = await get(watchlistRef(uid));
       if (!snapshot.exists()) {
         await Promise.all(
           DEFAULT_MARKETS.map((item) =>
-            saveWatchItem(user.uid, {
+            saveWatchItem(uid, {
               ...item,
               createdAt: new Date().toISOString()
             })
@@ -94,7 +95,7 @@ export function DashboardApp() {
 
     bootstrapDefaultWatchlist().catch(console.error);
 
-    const unwatchWatchlist = onValue(watchlistRef(user.uid), (snapshot) => {
+    const unwatchWatchlist = onValue(watchlistRef(uid), (snapshot) => {
       if (!mounted) {
         return;
       }
@@ -105,7 +106,7 @@ export function DashboardApp() {
       setSelectedPairId((current) => current ?? rows[0]?.id ?? null);
     });
 
-    const unwatchAlerts = onValue(alertsRef(user.uid), (snapshot) => {
+    const unwatchAlerts = onValue(alertsRef(uid), (snapshot) => {
       if (!mounted) {
         return;
       }
@@ -115,7 +116,7 @@ export function DashboardApp() {
       setAlerts(rows);
     });
 
-    const unwatchNotifications = onValue(notificationsRef(user.uid), (snapshot) => {
+    const unwatchNotifications = onValue(notificationsRef(uid), (snapshot) => {
       if (!mounted) {
         return;
       }
@@ -201,6 +202,7 @@ export function DashboardApp() {
     if (!user || alerts.length === 0) {
       return;
     }
+    const uid = user.uid;
 
     async function evaluateAlerts() {
       for (const alert of alerts) {
@@ -238,14 +240,14 @@ export function DashboardApp() {
 
         alertInFlightRef.current.add(alert.id);
         try {
-          await createNotification(user.uid, {
+          await createNotification(uid, {
             title,
             body,
             createdAt: new Date().toISOString(),
             read: false
           });
 
-          await patchAlert(user.uid, alert.id, {
+          await patchAlert(uid, alert.id, {
             lastTriggeredAt: new Date().toISOString(),
             lastTriggeredPrice: quote.price
           });
