@@ -16,9 +16,9 @@ const missingConfig = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
-if (missingConfig.length > 0) {
-  throw new Error(
-    `Missing Firebase env vars: ${missingConfig.join(", ")}. Check your .env.local file.`
+if (missingConfig.length > 0 && process.env.NODE_ENV !== "production") {
+  console.warn(
+    `Missing Firebase env vars: ${missingConfig.join(", ")}. Check your environment configuration.`
   );
 }
 
