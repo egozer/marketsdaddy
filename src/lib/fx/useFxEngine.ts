@@ -6,12 +6,16 @@ import { COUNTRY_PROFILES, TRACKED_CURRENCIES } from "@/lib/config/currencies";
 import {
   ANOMALY_CLAMP_PERCENT,
   EMA_ALPHA,
+  FX_WS_EMIT_INTERVAL_MS,
+  FX_WS_ENDPOINT,
+  FX_WS_RECONNECT_DELAY_MS,
   POLL_INTERVAL_MS,
   ROLLING_WINDOW_SIZE,
   WORKER_INTERPOLATION_TICK_MS
 } from "@/lib/config/runtime";
 import { fetchHistoricalSnapshots } from "@/lib/fx/historical";
 import { FxPoller } from "@/lib/fx/poller";
+import { FxRealtimeStream } from "@/lib/fx/realtime-stream";
 import { computeMetrics, type MetricsEngineOptions, type MetricsEngineState } from "@/lib/metrics/engine";
 import { computePurchasingPower } from "@/lib/purchasing-power/calc";
 import { useFxStore } from "@/store/useFxStore";
@@ -24,6 +28,8 @@ const METRICS_OPTIONS: MetricsEngineOptions = {
   emaAlpha: EMA_ALPHA,
   anomalyClampPercent: ANOMALY_CLAMP_PERCENT
 };
+
+const LIVE_INTERPOLATION_DURATION_MS = Math.min(POLL_INTERVAL_MS, FX_WS_EMIT_INTERVAL_MS);
 
 const buildRatesFromMetrics = (metrics: ReturnType<typeof useFxStore.getState>["metrics"]): Record<string, number> => {
   const rates: Record<string, number> = {
@@ -58,7 +64,9 @@ export interface FxEngineController {
 
 export const useFxEngine = (): FxEngineController => {
   const pollerRef = useRef<FxPoller | null>(null);
+  const streamRef = useRef<FxRealtimeStream | null>(null);
   const workerRef = useRef<Worker | null>(null);
+  const websocketLiveRef = useRef(false);
   const replayActiveRef = useRef(false);
   const replaySnapshotsRef = useRef<FxSnapshot[]>([]);
   const replayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -111,6 +119,18 @@ export const useFxEngine = (): FxEngineController => {
     [emitMainThreadMetrics, pushMainThreadSnapshot]
   );
 
+  const stopLiveIngestion = useCallback((): void => {
+    websocketLiveRef.current = false;
+    streamRef.current?.stop();
+    pollerRef.current?.stop();
+  }, []);
+
+  const startLiveIngestion = useCallback((): void => {
+    websocketLiveRef.current = false;
+    streamRef.current?.start();
+    pollerRef.current?.start();
+  }, []);
+
   useEffect(() => {
     try {
       const worker = new Worker(new URL("../../workers/metrics.worker.ts", import.meta.url), {
@@ -125,7 +145,7 @@ export const useFxEngine = (): FxEngineController => {
         emaAlpha: EMA_ALPHA,
         anomalyClampPercent: ANOMALY_CLAMP_PERCENT,
         interpolationTickMs: WORKER_INTERPOLATION_TICK_MS,
-        interpolationDurationMs: POLL_INTERVAL_MS
+        interpolationDurationMs: LIVE_INTERPOLATION_DURATION_MS
       });
 
       worker.onmessage = (event: MessageEvent<WorkerOutboundMessage>) => {
@@ -144,7 +164,7 @@ export const useFxEngine = (): FxEngineController => {
             useFxStore.getState().setReplayConfig(null);
             useFxStore.getState().setReplayProgress({ currentIndex: 0, total: 0, date: null });
             replaySnapshotsRef.current = [];
-            pollerRef.current?.start();
+            startLiveIngestion();
           }
           return;
         }
@@ -179,6 +199,9 @@ export const useFxEngine = (): FxEngineController => {
       intervalMs: POLL_INTERVAL_MS,
       windowSize: ROLLING_WINDOW_SIZE,
       onSnapshot: (snapshot, unchanged) => {
+        if (websocketLiveRef.current) {
+          return;
+        }
         useFxStore.getState().setError(null);
         processSnapshot(snapshot, unchanged);
       },
@@ -188,16 +211,38 @@ export const useFxEngine = (): FxEngineController => {
     });
 
     pollerRef.current = poller;
-    poller.start();
+
+    const stream = new FxRealtimeStream({
+      currencies: TRACKED_CURRENCIES,
+      endpoint: FX_WS_ENDPOINT,
+      emitIntervalMs: FX_WS_EMIT_INTERVAL_MS,
+      reconnectDelayMs: FX_WS_RECONNECT_DELAY_MS,
+      onSnapshot: (snapshot, unchanged) => {
+        websocketLiveRef.current = true;
+        pollerRef.current?.stop();
+        useFxStore.getState().setError(null);
+        processSnapshot(snapshot, unchanged);
+      },
+      onError: (error) => {
+        websocketLiveRef.current = false;
+        if (!replayActiveRef.current) {
+          pollerRef.current?.start();
+        }
+        useFxStore.getState().setError(error.message);
+      }
+    });
+
+    streamRef.current = stream;
+    startLiveIngestion();
 
     return () => {
       clearReplayTimer();
-      poller.stop();
+      stopLiveIngestion();
       workerRef.current?.postMessage({ type: "dispose" });
       workerRef.current?.terminate();
       workerRef.current = null;
     };
-  }, [clearReplayTimer, processSnapshot]);
+  }, [clearReplayTimer, processSnapshot, startLiveIngestion, stopLiveIngestion]);
 
   const startReplay = useCallback(
     async (config: ReplayConfig) => {
@@ -205,7 +250,7 @@ export const useFxEngine = (): FxEngineController => {
       useFxStore.getState().setStatus("replay");
       useFxStore.getState().setError(null);
 
-      pollerRef.current?.stop();
+      stopLiveIngestion();
       clearReplayTimer();
 
       const snapshots = await fetchHistoricalSnapshots(
@@ -218,7 +263,7 @@ export const useFxEngine = (): FxEngineController => {
         useFxStore.getState().setError("Not enough historical points for replay.");
         useFxStore.getState().setReplayConfig(null);
         useFxStore.getState().setStatus("live");
-        pollerRef.current?.start();
+        startLiveIngestion();
         return;
       }
 
@@ -250,7 +295,7 @@ export const useFxEngine = (): FxEngineController => {
           useFxStore.getState().setReplayConfig(null);
           useFxStore.getState().setStatus("live");
           useFxStore.getState().setReplayProgress({ currentIndex: 0, total: 0, date: null });
-          pollerRef.current?.start();
+          startLiveIngestion();
           return;
         }
 
@@ -267,7 +312,7 @@ export const useFxEngine = (): FxEngineController => {
       runTick();
       replayTimerRef.current = setInterval(runTick, intervalMs);
     },
-    [clearReplayTimer, processSnapshot]
+    [clearReplayTimer, processSnapshot, startLiveIngestion, stopLiveIngestion]
   );
 
   const stopReplay = useCallback(() => {
@@ -282,8 +327,8 @@ export const useFxEngine = (): FxEngineController => {
     useFxStore.getState().setReplayConfig(null);
     useFxStore.getState().setReplayProgress({ currentIndex: 0, total: 0, date: null });
     useFxStore.getState().setStatus("live");
-    pollerRef.current?.start();
-  }, [clearReplayTimer]);
+    startLiveIngestion();
+  }, [clearReplayTimer, startLiveIngestion]);
 
   const seekReplay = useCallback(
     (index: number) => {
@@ -292,7 +337,7 @@ export const useFxEngine = (): FxEngineController => {
         return;
       }
 
-      pollerRef.current?.stop();
+      stopLiveIngestion();
       replayActiveRef.current = true;
       clearReplayTimer();
 
@@ -313,7 +358,7 @@ export const useFxEngine = (): FxEngineController => {
         });
       }
     },
-    [clearReplayTimer, processSnapshot]
+    [clearReplayTimer, processSnapshot, stopLiveIngestion]
   );
 
   const getReplayDates = useCallback((): string[] => replaySnapshotsRef.current.map((snapshot) => snapshot.date), []);

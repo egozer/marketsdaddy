@@ -10,6 +10,10 @@ export const FX_LATEST_FALLBACK_ENDPOINT =
 export const FX_HISTORICAL_FALLBACK_ENDPOINT =
   "https://{date}.currency-api.pages.dev/v1/currencies/usd.json";
 
+export const FX_WS_ENDPOINT = process.env.NEXT_PUBLIC_FX_WS_ENDPOINT ?? "wss://ws.realtimefinance.io";
+export const FX_WS_EMIT_INTERVAL_MS = Number(process.env.NEXT_PUBLIC_FX_WS_EMIT_INTERVAL_MS ?? 1000);
+export const FX_WS_RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_FX_WS_RECONNECT_DELAY_MS ?? 2500);
+
 export const POLL_INTERVAL_MS = Number(process.env.NEXT_PUBLIC_POLL_INTERVAL_MS ?? 5000);
 export const POLL_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_POLL_TIMEOUT_MS ?? 4000);
 export const ROLLING_WINDOW_SIZE = Number(process.env.NEXT_PUBLIC_ROLLING_WINDOW_SIZE ?? 120);
